@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*
 
 import datetime
-import urlparse
+from urllib.parse import urlparse
 import dateutil.parser
 
 import scrapy
@@ -182,7 +182,6 @@ class TMSpider(scrapy.Spider):
         if 0:
             yield {
                 '_type': 'user',
-
             }
 
     def parse_user_feed(self, response):
@@ -233,7 +232,7 @@ class TMSpider(scrapy.Spider):
 
 
 if __name__ == '__main__':
-    print 'Usage: scrapy runspider %s' % __file__
+    print('Usage: scrapy runspider %s' % __file__)
 
     # settings = scrapy.settings.Settings({
     #     'AUTOTHROTTLE_ENABLED': True,

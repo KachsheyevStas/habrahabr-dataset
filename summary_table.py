@@ -85,7 +85,7 @@ if __name__ == '__main__':
         df['content_length'].append(len(post['content_html']))
 
         if n % 10000 == 0:
-            print 'Processed', n, 'posts'
+            print('Processed', n, 'posts')
 
     df = pandas.DataFrame(df).ix[:, columns]
     df.to_csv('posts.csv', encoding='utf8', header=True, index=False)

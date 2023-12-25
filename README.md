@@ -58,7 +58,7 @@ indexed with continuous integer numbers from 1 to about 300000. You should speci
 If you want to distribute your download across several machines, just specify them different pieces of the whole range.
 
 ```bash
-$ python download_all_habr.py --start-index 1 --finish-index 300000
+$ python download_all_habr.py --start-index 1 --finish-index 780000
 ```
 
 Script will create the directory `habr_pages` and download post contents there.

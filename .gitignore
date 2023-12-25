@@ -55,3 +55,9 @@ docs/_build/
 
 # PyBuilder
 target/
+.idea/misc.xml
+.idea/vcs.xml
+.idea/inspectionProfiles/Project_Default.xml
+habr_posts/._exception_1
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/habrahabr-dataset.iml
