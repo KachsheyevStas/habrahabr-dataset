@@ -8,6 +8,7 @@ import traceback
 import dateutil.parser
 import scrapy
 import requests
+from tqdm import tqdm
 
 
 def parse_page_datetime(date_str):
@@ -61,10 +62,10 @@ def parse_habrahabr_page(text, page_index):
         hubs.append((hub_name, hub_url))
 
     content_html = post_sel.css('div.article-formatted-body').extract_first()
+    # print(content_html)
 
     tags = post_sel.css(
         'div.tm-article-presenter__meta-list ul.tm-separated-list__list li.tm-separated-list__item a ::text').extract()
-    print(tags)
     infopanel_sel = post_sel.css('div.tm-article-sticky-panel')
     pageviews = int(infopanel_sel.css('span.tm-article-comments-counter-link__value ::text').extract_first())
     favs_count = int(infopanel_sel.css('span.bookmarks-button__counter ::text').extract_first())
@@ -73,62 +74,59 @@ def parse_habrahabr_page(text, page_index):
 
     author_sel = post_sel.css('div.tm-user-card__title')
     author = author_sel.css('span.tm-user-card__name ::text').extract_first()
-    print(author)
     author_url = author_sel.css('a ::attr(href)').extract_first()
-    print(author_url)
     author_rating = float(
         post_sel.css('span.tm-votes-lever__score-counter.tm-votes-lever__score-counter_rating ::text').extract_first())
-    print(author_rating)
     author_rating = float(author_rating) if author_rating is not None else None
 
     comments_sel = page_sel.css('#publication-comments')
     comments_count = comments_sel.css('span.tm-article-comments-counter-link__value.tm-article-comments-counter-link__value_contrasted ::text').extract_first()
-    if comments_count is not None:
+    if comments_count is not None and comments_count.__contains__('Comments'):
         comments_count = int(str(comments_count).replace('Comments', ""))
 
-    def extract_comments(sel):
-        childs_sel = sel.xpath('./div[@class="comment_item"]')
+    # def extract_comments(sel):
+    #     print(sel.extract_first())
+    #     childs_sel = sel.css('div.tm-article-comments')
+    #     extracted_comments = []
+    #
+    #     for child_sel in childs_sel:
+    #         body_sel = child_sel.xpath('./div[@class="comment_body "]')[0]
+    #
+    #         reply_sel = child_sel.xpath('./div[@class="reply_comments"]')
+    #         replies = []
+    #         if len(reply_sel) > 0:
+    #             replies = extract_comments(reply_sel[0])
+    #
+    #         if len(body_sel.css('div.author_banned')) > 0:
+    #             comment = {
+    #                 'banned': True,
+    #                 'replies': replies,
+    #             }
+    #         else:
+    #             time = body_sel.css('time ::text').extract_first()
+    #             time = datetime_to_iso(parse_page_datetime(time)) if time is not None else None
+    #             username = body_sel.css('a.username ::text').extract_first()
+    #             link_to_comment = body_sel.css('a.link_to_comment ::attr(href)').extract_first()
+    #             votes = body_sel.css('div.voting span.score ::text').extract_first()
+    #             if votes is not None:
+    #                 votes = int(votes.replace(u'\u2013', '-'))
+    #             message_html = body_sel.css('div.message').extract_first()
+    #
+    #             comment = {
+    #                 'banned': False,
+    #                 'time': time,
+    #                 'username': username,
+    #                 'link': link_to_comment,
+    #                 'votes': votes,
+    #                 'message_html': message_html,
+    #                 'replies': replies,
+    #             }
+    #
+    #         extracted_comments.append(comment)
+    #
+    #     return extracted_comments
 
-        extracted_comments = []
-
-        for child_sel in childs_sel:
-            body_sel = child_sel.xpath('./div[@class="comment_body "]')[0]
-
-            reply_sel = child_sel.xpath('./div[@class="reply_comments"]')
-            replies = []
-            if len(reply_sel) > 0:
-                replies = extract_comments(reply_sel[0])
-
-            if len(body_sel.css('div.author_banned')) > 0:
-                comment = {
-                    'banned': True,
-                    'replies': replies,
-                }
-            else:
-                time = body_sel.css('time ::text').extract_first()
-                time = datetime_to_iso(parse_page_datetime(time)) if time is not None else None
-                username = body_sel.css('a.username ::text').extract_first()
-                link_to_comment = body_sel.css('a.link_to_comment ::attr(href)').extract_first()
-                votes = body_sel.css('div.voting span.score ::text').extract_first()
-                if votes is not None:
-                    votes = int(votes.replace(u'\u2013', '-'))
-                message_html = body_sel.css('div.message').extract_first()
-
-                comment = {
-                    'banned': False,
-                    'time': time,
-                    'username': username,
-                    'link': link_to_comment,
-                    'votes': votes,
-                    'message_html': message_html,
-                    'replies': replies,
-                }
-
-            extracted_comments.append(comment)
-
-        return extracted_comments
-
-    comments = extract_comments(comments_sel)
+    # comments = extract_comments(next_comments_sel)
 
     post = {
         '_id': post_id,
@@ -144,7 +142,7 @@ def parse_habrahabr_page(text, page_index):
         'author_url': author_url,
         'author_rating': author_rating,
         'comments_count': comments_count,
-        'comments': comments,
+        # 'comments': comments,
     }
 
     return post
@@ -160,11 +158,11 @@ def download_habr_page(page_index):
 
     url = 'http://habrahabr.ru/post/%s/' % name
 
-    print('Reading', page_index)
-    print('   url:', url)
+    # print('Reading', page_index)
+    # print('   url:', url)
 
     resp = requests.get(url)
-    print('   status:', resp.status_code)
+    # print('   status:', resp.status_code)
     if resp.status_code == 404:
         # not found
         with open('habr_posts/._404_%s' % name, 'w') as f:
@@ -176,7 +174,7 @@ def download_habr_page(page_index):
                 with open('habr_posts/._forbid_%s' % name, 'w') as f:
                     pass
             else:
-                print('   title:', page_record['title'])
+                # print('   title:', page_record['title'])
                 with open('habr_posts/%s' % name, 'w') as f:
                     json.dump(page_record, f)
         except KeyboardInterrupt as e:
@@ -206,16 +204,7 @@ if __name__ == '__main__':
     if not os.path.exists('habr_posts'):
         os.mkdir('habr_posts')
 
-    if args.processes == 1:
-        for page_index in indices:
-            download_habr_page(page_index)
-    else:
-        import signal
 
+    for page_index in tqdm(indices):
+        download_habr_page(page_index)
 
-        def init_worker():
-            signal.signal(signal.SIGINT, signal.SIG_IGN)
-
-
-        pool = multiprocessing.Pool(args.processes, init_worker)
-        pool.map(download_habr_page, indices)
