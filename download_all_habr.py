@@ -9,7 +9,7 @@ import dateutil.parser
 import scrapy
 import requests
 from tqdm import tqdm
-
+import http
 
 def parse_page_datetime(date_str):
     month_name_map = {
@@ -160,33 +160,39 @@ def download_habr_page(page_index):
 
     # print('Reading', page_index)
     # print('   url:', url)
+    try:
+        resp = requests.get(url)
+        # print('   status:', resp.status_code)
+        if resp.status_code == 404:
+            # not found
+            with open('habr_posts/._404_%s' % name, 'w') as f:
+                pass
+        elif resp.status_code == 200:
 
-    resp = requests.get(url)
-    # print('   status:', resp.status_code)
-    if resp.status_code == 404:
-        # not found
-        with open('habr_posts/._404_%s' % name, 'w') as f:
+                page_record = parse_habrahabr_page(resp.text, page_index)
+                if page_record is None:
+                    with open('habr_posts/._forbid_%s' % name, 'w') as f:
+                        pass
+                else:
+                    # print('   title:', page_record['title'])
+                    with open('habr_posts/%s' % name, 'w') as f:
+                        json.dump(page_record, f)
+
+        else:
             pass
-    elif resp.status_code == 200:
-        try:
-            page_record = parse_habrahabr_page(resp.text, page_index)
-            if page_record is None:
-                with open('habr_posts/._forbid_%s' % name, 'w') as f:
-                    pass
-            else:
-                # print('   title:', page_record['title'])
-                with open('habr_posts/%s' % name, 'w') as f:
-                    json.dump(page_record, f)
-        except KeyboardInterrupt as e:
-            raise e
-        except Exception as e:
-            exception_filename = 'habr_posts/._exception_%s' % name
-            with open(exception_filename, 'w') as f:
-                f.write(traceback.format_exc())
-            print(' can\'t parse, exception %s, see %s' % (e.__class__.__name__, exception_filename))
-
-    else:
-        print('Page %s: status %d' % (name, resp.status_code))
+    except http.client.RemoteDisconnected as e:
+        exception_filename = 'habr_posts/._exception_%s' % name
+        with open(exception_filename, 'w') as f:
+            f.write(traceback.format_exc())
+        print(' can\'t parse, exception %s, see %s' % (e.__class__.__name__, exception_filename))
+    except KeyboardInterrupt as e:
+        raise e
+    except Exception as e:
+        exception_filename = 'habr_posts/._exception_%s' % name
+        with open(exception_filename, 'w') as f:
+            f.write(traceback.format_exc())
+        print(' can\'t parse, exception %s, see %s' % (e.__class__.__name__, exception_filename))
+        # print('Page %s: status %d' % (name, resp.status_code))
 
 
 if __name__ == '__main__':
