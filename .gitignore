@@ -64,3 +64,5 @@ habr_posts/._exception_1
 diplom/text_test.txt
 habr_posts
 
+*.xml
+*.rar
